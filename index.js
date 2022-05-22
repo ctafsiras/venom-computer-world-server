@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+const jwt = require('jsonwebtoken');
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
@@ -20,6 +21,7 @@ const run = async () => {
         await client.connect()
         const productCollection = client.db("venomComputerWorld").collection("products");
         const orderCollection = client.db("venomComputerWorld").collection("orders");
+        const userCollection = client.db("venomComputerWorld").collection("users");
 
         //add product api
         app.post('/add-product', async (req, res) => {
@@ -62,19 +64,33 @@ const run = async () => {
         })
         //get order api
         app.get('/get-order/:email', async (req, res) => {
-            const {email} = req.params;
-            const filter={email}
+            const { email } = req.params;
+            const filter = { email }
             const result = await orderCollection.find(filter).toArray();
             res.send(result)
         })
 
         //delete order api
         app.delete('/delete-order/:id', async (req, res) => {
-            const {id} = req.params;
-            const filter={_id: ObjectId(id)}
+            const { id } = req.params;
+            const filter = { _id: ObjectId(id) }
             const result = await orderCollection.deleteOne(filter);
             res.send(result)
         })
+
+        //add user api
+        app.put('/add-user/:email', async (req, res) => {
+            const { email } = req.params;
+            const filter = { email }
+            const user = req.body;
+            const options = { upsert: true };
+            const updatedUser = { $set: user };
+            const token = jwt.sign(email, 'secret');
+            console.log(token);
+            const result = await userCollection.updateOne(filter, updatedUser, options);
+            res.send({result, token})
+        })
+
     }
     finally {
 
