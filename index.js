@@ -54,6 +54,15 @@ const run = async () => {
             res.send(result)
         })
 
+        //delete product by id api
+        app.delete('/delete-product/:id', async (req, res) => {
+            const { id } = req.params;
+            const filter = { _id: ObjectId(id) }
+            const result = await productCollection.deleteOne(filter);
+            res.send(result)
+        })
+
+
 
 
         //add order api
@@ -96,9 +105,16 @@ const run = async () => {
             const result = await userCollection.find().toArray();
             res.send(result)
         })
+        //get user by email api
+        app.get('/get-user/:email', async (req, res) => {
+            const { email } = req.params;
+            const filter = { email }
+            const result = await userCollection.findOne(filter)
+            res.send(result)
+        })
 
-         //update user api
-         app.patch('/update-user/:id', async (req, res) => {
+        //update user api
+        app.patch('/update-user/:id', async (req, res) => {
             const { id } = req.params;
             const filter = { _id: ObjectId(id) }
             const user = req.body;
