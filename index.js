@@ -88,7 +88,23 @@ const run = async () => {
             const token = jwt.sign(email, 'secret');
             console.log(token);
             const result = await userCollection.updateOne(filter, updatedUser, options);
-            res.send({result, token})
+            res.send({ result, token })
+        })
+
+        //get user api
+        app.get('/get-user', async (req, res) => {
+            const result = await userCollection.find().toArray();
+            res.send(result)
+        })
+
+         //update user api
+         app.patch('/update-user/:id', async (req, res) => {
+            const { id } = req.params;
+            const filter = { _id: ObjectId(id) }
+            const user = req.body;
+            const updatedUser = { $set: user }
+            const result = await userCollection.updateOne(filter, updatedUser);
+            res.send(result)
         })
 
     }
