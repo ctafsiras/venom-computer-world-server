@@ -19,12 +19,22 @@ const run = async () => {
     try {
         await client.connect()
         const productCollection = client.db("venomComputerWorld").collection("products");
+        const orderCollection = client.db("venomComputerWorld").collection("orders");
 
         //add product api
         app.post('/add-product', async (req, res) => {
             const product = req.body;
             const result = await productCollection.insertOne(product);
-            res.send({ success: true, result })
+            res.send(result)
+        })
+        //update product api
+        app.patch('/update-product/:id', async (req, res) => {
+            const { id } = req.params;
+            const filter = { _id: ObjectId(id) }
+            const product = req.body;
+            const updateProduct = { $set: product }
+            const result = await productCollection.updateOne(filter, updateProduct);
+            res.send(result)
         })
 
 
@@ -39,6 +49,30 @@ const run = async () => {
             const { id } = req.params;
             const filter = { _id: ObjectId(id) }
             const result = await productCollection.findOne(filter);
+            res.send(result)
+        })
+
+
+
+        //add order api
+        app.post('/add-order', async (req, res) => {
+            const order = req.body;
+            const result = await orderCollection.insertOne(order);
+            res.send(result)
+        })
+        //get order api
+        app.get('/get-order/:email', async (req, res) => {
+            const {email} = req.params;
+            const filter={email}
+            const result = await orderCollection.find(filter).toArray();
+            res.send(result)
+        })
+
+        //delete order api
+        app.delete('/delete-order/:id', async (req, res) => {
+            const {id} = req.params;
+            const filter={_id: ObjectId(id)}
+            const result = await orderCollection.deleteOne(filter);
             res.send(result)
         })
     }
