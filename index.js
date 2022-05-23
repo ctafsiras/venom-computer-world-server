@@ -17,6 +17,27 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 
+//token verify
+
+function verifyToken(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send({ message: 'UnAuthorized Access' });
+    }
+    const token = authHeader.split(' ')[1];
+
+    jwt.verify(token, process.env.TOKEN_SECRET, function (err, decoded) {
+        if (err) {
+            return res.status(403).send({ message: 'Forbidden Access' });
+        }
+        if (decoded) {
+            req.decoded = decoded;
+            next();
+        }
+    });
+}
+
+
 const run = async () => {
     try {
         await client.connect()
@@ -26,7 +47,19 @@ const run = async () => {
         const reviewCollection = client.db("venomComputerWorld").collection("reviews");
 
 
+        //verify admin
 
+
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.params.email;
+            const query = { email };
+            const requester = await userCollection.findOne({ email: req.decoded.email });
+            if (requester.role === 'admin') {
+                next();
+            } else {
+                return res.status(403).send({ message: 'Forbidden Access' });
+            }
+        }
 
         //payment stripe 
         app.post("/create-payment-intent", async (req, res) => {
@@ -45,7 +78,7 @@ const run = async () => {
         });
 
         //add product api
-        app.post('/add-product', async (req, res) => {
+        app.post('/add-product', verifyToken, async (req, res) => {
             const product = req.body;
             const result = await productCollection.insertOne(product);
             res.send(result)
@@ -63,6 +96,11 @@ const run = async () => {
 
         //get product api
         app.get('/get-product', async (req, res) => {
+            const result = await productCollection.find().toArray();
+            res.send(result)
+        })
+        //get product api
+        app.get('/get-six-product', async (req, res) => {
             const result = await productCollection.find().limit(6).toArray();
             res.send(result)
         })
