@@ -63,7 +63,7 @@ const run = async () => {
 
         //get product api
         app.get('/get-product', async (req, res) => {
-            const result = await productCollection.find().toArray();
+            const result = await productCollection.find().limit(6).toArray();
             res.send(result)
         })
 
