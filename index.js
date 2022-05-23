@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
+const stripe = require('stripe')(process.env.SECRET_KEY);
 const port = process.env.PORT || 4000;
 
 app.use(cors())
@@ -22,6 +23,26 @@ const run = async () => {
         const productCollection = client.db("venomComputerWorld").collection("products");
         const orderCollection = client.db("venomComputerWorld").collection("orders");
         const userCollection = client.db("venomComputerWorld").collection("users");
+        const reviewCollection = client.db("venomComputerWorld").collection("reviews");
+
+
+
+
+        //payment stripe 
+        app.post("/create-payment-intent", async (req, res) => {
+            const { price } = req.body;
+            const amount = price * 100;
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: "usd",
+                automatic_payment_methods: {
+                    enabled: true,
+                },
+            });
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
+        });
 
         //add product api
         app.post('/add-product', async (req, res) => {
@@ -72,10 +93,32 @@ const run = async () => {
             res.send(result)
         })
         //get order api
+        app.get('/get-order/', async (req, res) => {
+            const result = await orderCollection.find().toArray();
+            res.send(result)
+        })
+        //get order by email api
         app.get('/get-order/:email', async (req, res) => {
             const { email } = req.params;
             const filter = { email }
             const result = await orderCollection.find(filter).toArray();
+            res.send(result)
+        })
+        //get order by id api
+        app.get('/get-order-id/:id', async (req, res) => {
+            const { id } = req.params;
+            const filter = { _id: ObjectId(id) }
+            const result = await orderCollection.findOne(filter);
+            res.send(result)
+        })
+
+        //update order by id api
+        app.patch('/update-order/:id', async (req, res) => {
+            const { id } = req.params;
+            const filter = { _id: ObjectId(id) }
+            const order = req.body;
+            const updatedOrder = { $set: order }
+            const result = await orderCollection.updateOne(filter, updatedOrder);
             res.send(result)
         })
 
@@ -120,6 +163,26 @@ const run = async () => {
             const user = req.body;
             const updatedUser = { $set: user }
             const result = await userCollection.updateOne(filter, updatedUser);
+            res.send(result)
+        })
+
+        //add review api
+        app.post('/add-review', async (req, res) => {
+            const review = req.body;
+            const result = await reviewCollection.insertOne(review);
+            res.send(result)
+        })
+
+        //get review by email api
+        app.get('/get-review/:email', async (req, res) => {
+            const { email } = req.params;
+            const filter = { email: email }
+            const result = await reviewCollection.findOne(filter)
+            res.send(result)
+        })
+        //get review api
+        app.get('/get-review', async (req, res) => {
+            const result = await reviewCollection.find().toArray();
             res.send(result)
         })
 
