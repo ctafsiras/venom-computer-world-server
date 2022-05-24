@@ -78,7 +78,7 @@ const run = async () => {
         });
 
         //add product api
-        app.post('/add-product', verifyToken, async (req, res) => {
+        app.post('/add-product', async (req, res) => {
             const product = req.body;
             const result = await productCollection.insertOne(product);
             res.send(result)
