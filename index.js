@@ -21,17 +21,19 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 
 function verifyToken(req, res, next) {
     const authHeader = req.headers.authorization;
+
     if (!authHeader) {
         return res.status(401).send({ message: 'UnAuthorized Access' });
     }
     const token = authHeader.split(' ')[1];
 
-    jwt.verify(token, process.env.TOKEN_SECRET, function (err, decoded) {
+    jwt.verify(token, 'secret', function (err, decoded) {
         if (err) {
             return res.status(403).send({ message: 'Forbidden Access' });
         }
         if (decoded) {
             req.decoded = decoded;
+            console.log('object');
             next();
         }
     });
@@ -51,9 +53,8 @@ const run = async () => {
 
 
         const verifyAdmin = async (req, res, next) => {
-            const email = req.params.email;
-            const query = { email };
-            const requester = await userCollection.findOne({ email: req.decoded.email });
+            const email = req.decoded.email;
+            const requester = await userCollection.findOne({ email });
             if (requester.role === 'admin') {
                 next();
             } else {
@@ -95,11 +96,11 @@ const run = async () => {
 
 
         //get product api
-        app.get('/get-product', async (req, res) => {
+        app.get('/get-product', verifyToken, async (req, res) => {
             const result = await productCollection.find().toArray();
             res.send(result)
         })
-        //get product api
+        //get six product api
         app.get('/get-six-product', async (req, res) => {
             const result = await productCollection.find().limit(6).toArray();
             res.send(result)
@@ -131,12 +132,12 @@ const run = async () => {
             res.send(result)
         })
         //get order api
-        app.get('/get-order/', async (req, res) => {
+        app.get('/get-order/', verifyToken, async (req, res) => {
             const result = await orderCollection.find().toArray();
             res.send(result)
         })
         //get order by email api
-        app.get('/get-order/:email', async (req, res) => {
+        app.get('/get-order/:email', verifyToken, async (req, res) => {
             const { email } = req.params;
             const filter = { email }
             const result = await orderCollection.find(filter).toArray();
@@ -182,12 +183,12 @@ const run = async () => {
         })
 
         //get user api
-        app.get('/get-user', async (req, res) => {
+        app.get('/get-user', verifyToken, async (req, res) => {
             const result = await userCollection.find().toArray();
             res.send(result)
         })
         //get user by email api
-        app.get('/get-user/:email', async (req, res) => {
+        app.get('/get-user/:email', verifyToken, async (req, res) => {
             const { email } = req.params;
             const filter = { email }
             const result = await userCollection.findOne(filter)
@@ -195,7 +196,7 @@ const run = async () => {
         })
 
         //update user api
-        app.patch('/update-user/:id', async (req, res) => {
+        app.patch('/update-user/:id', verifyToken, async (req, res) => {
             const { id } = req.params;
             const filter = { _id: ObjectId(id) }
             const user = req.body;
