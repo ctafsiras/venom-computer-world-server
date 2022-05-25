@@ -33,7 +33,6 @@ function verifyToken(req, res, next) {
         }
         if (decoded) {
             req.decoded = decoded;
-            console.log('object');
             next();
         }
     });
@@ -53,8 +52,10 @@ const run = async () => {
 
 
         const verifyAdmin = async (req, res, next) => {
-            const email = req.decoded.email;
+            // console.log(req);
+            const email = req.decoded;
             const requester = await userCollection.findOne({ email });
+            console.log(requester);
             if (requester.role === 'admin') {
                 next();
             } else {
@@ -79,7 +80,7 @@ const run = async () => {
         });
 
         //add product api
-        app.post('/add-product', async (req, res) => {
+        app.post('/add-product', verifyToken, verifyAdmin, async (req, res) => {
             const product = req.body;
             const result = await productCollection.insertOne(product);
             res.send(result)
@@ -96,7 +97,7 @@ const run = async () => {
 
 
         //get product api
-        app.get('/get-product', verifyToken, async (req, res) => {
+        app.get('/get-product', verifyToken, verifyAdmin, async (req, res) => {
             const result = await productCollection.find().toArray();
             res.send(result)
         })
@@ -132,7 +133,7 @@ const run = async () => {
             res.send(result)
         })
         //get order api
-        app.get('/get-order/', verifyToken, async (req, res) => {
+        app.get('/get-order/', verifyToken, verifyAdmin, async (req, res) => {
             const result = await orderCollection.find().toArray();
             res.send(result)
         })
@@ -196,7 +197,7 @@ const run = async () => {
         })
 
         //update user api
-        app.patch('/update-user/:id', verifyToken, async (req, res) => {
+        app.patch('/update-user/:id', async (req, res) => {
             const { id } = req.params;
             const filter = { _id: ObjectId(id) }
             const user = req.body;
